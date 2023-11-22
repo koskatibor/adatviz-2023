@@ -47,12 +47,12 @@ model_options = [{'label': label, 'value': value} for label, value in zip(models
 
 app.layout = dmc.Container([
         dmc.Title('Magyarországi használtautó adatok (2020 - A hasznaltauto.hu hirdetései alapján)', color="blue", size="h3", style={'float': 'center'}),
-        dmc.RadioGroup(
-            [dmc.Radio(i, value=i) for i in ['2020', '2023']],
-            id = 'radio-year',
-            value = '2020',
-            size = 'sm',
-        ),
+        # dmc.RadioGroup(
+        #     [dmc.Radio(i, value=i) for i in ['2020', '2023']],
+        #     id = 'radio-year',
+        #     value = '2020',
+        #     size = 'sm',
+        # ),
         dcc.Dropdown(
             id='region-dropdown',
             options=region_options,
@@ -116,8 +116,7 @@ app.layout = dmc.Container([
      Output(component_id='scatter', component_property='figure'),
      Output(component_id='brand-pie', component_property='figure'),
      Output(component_id='heatmap', component_property='figure')],
-    [Input(component_id='radio-year', component_property='value'),
-     Input(component_id='region-dropdown', component_property='value'),
+    [Input(component_id='region-dropdown', component_property='value'),
      Input(component_id='proseller-dropdown', component_property='value'),
      Input(component_id='brand-dropdown', component_property='value')],
     background=True,
@@ -177,7 +176,7 @@ def generate_map(map_df):
 def generate_scatter(data):
     scatter_data = data.query('production > "%s"' % (datetime.date(1900, 1,1))).copy()
     scatter_data.sort_values(by='ad_price')
-    fig = px.scatter(x=scatter_data['production'], y=scatter_data['ad_price'], color=scatter_data['postal_code'])
+    fig = px.scatter(x=scatter_data['production'], y=scatter_data['ad_price'], color=scatter_data['postal_code'], title="A gyártási év és a meghirdetett ár közötti kapcsolat", labels={"production": "Gyártási év", "ad_price": "Meghirdetett ár"})
     return fig
 
 
