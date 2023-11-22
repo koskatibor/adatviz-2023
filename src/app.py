@@ -14,7 +14,7 @@ import diskcache
 
 # Initialize Dash application
 app = Dash(__name__)
-# server = app.server
+server = app.server
 app.title = "Secondhand car market Hungary (2020 & 2023)"
 
 # INITIALIZE CALLBACK MANAGER
