@@ -4,22 +4,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.figure_factory as ff
 import geopandas as gpd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from dash import Dash, html, dash_table, dcc, Output, Input, DiskcacheManager
+from dash import Dash, dash_table, dcc, Output, Input, DiskcacheManager
 import dash_mantine_components as dmc
-import dash_bootstrap_components as dbc
 import diskcache
-
-
-# Initialize Dash application
-app = Dash(__name__)
-server = app.server
-app.title = "Secondhand car market Hungary (2020 & 2023)"
 
 # INITIALIZE CALLBACK MANAGER
 cache = diskcache.Cache("./cache")
 bg_callback_manager = DiskcacheManager(cache)
+
+# Initialize Dash application
+app = Dash(__name__, background_callback_manager=bg_callback_manager)
+server = app.server
+app.title = "Secondhand car market Hungary (2020 & 2023)"
 
 # IMPORT 2020 DATA
 dtypes = {"ad_id": int, "region_id": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
