@@ -12,7 +12,7 @@ cache = diskcache.Cache("./cache")
 bg_callback_manager = DiskcacheManager(cache)
 
 # Initialize Dash application
-app = Dash(__name__, background_callback_manager=bg_callback_manager, suppress_callback_exceptions=True)
+app = Dash(__name__, background_callback_manager=bg_callback_manager)
 server = app.server
 app.title = "Secondhand car market Hungary (2020 & 2023)"
 
@@ -20,25 +20,25 @@ app.title = "Secondhand car market Hungary (2020 & 2023)"
 dtypes = {"ad_id": int, "region_id": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
 date_columns = ["production", "documentvalid", "sales_date", "download_date", "sales_update_date", "upload_date"]
 na_values_list = ["", " ", "NA", None]
-ads = pd.read_csv("./db_2020/advertisements_202006112147.csv", dtype=dtypes, parse_dates=date_columns, dayfirst=True, na_values=na_values_list, engine="c", )
+ads = pd.read_csv("../db_2020/advertisements_202006112147.csv", dtype=dtypes, parse_dates=date_columns, dayfirst=True, na_values=na_values_list, engine="c", )
 
 # IMPORT 2023 DATA
 dtypes = {"ad_id": int, "region": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
 date_columns = ["production", "documentvalid"]
 na_values_list = ["", " ", "NA", None]
-ads_2023 = pd.read_csv("./db_2023/advertisements_processed.csv", dtype=dtypes, parse_dates=date_columns, na_values=na_values_list, engine="c", encoding="latin-1")
+ads_2023 = pd.read_csv("../db_2023/advertisements_processed.csv", dtype=dtypes, parse_dates=date_columns, na_values=na_values_list, engine="c", encoding="latin-1")
 
 # IMPORT KEY-VALUE TABLES
 dtypes = {"region_id": int, "region_name": str}
-counties = pd.read_csv("./db_2020/region_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
+counties = pd.read_csv("../db_2020/region_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
 dtypes = {"brand_id": int, "brand_name": str}
-brands = pd.read_csv("./db_2020/brand_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
+brands = pd.read_csv("../db_2020/brand_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
 dtypes = {"model_id": int, "model_name": str}
-models = pd.read_csv("./db_2020/model_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
+models = pd.read_csv("../db_2020/model_202006112147.csv", dtype=dtypes, engine="c", encoding="latin-1")
 
 
 # INITIALIZE GEOJSON
-geo = gpd.read_file("./postal_codes.geojson")
+geo = gpd.read_file("../postal_codes.geojson")
 
 # INITIALIZE DROPDOWN VALUES
 region_options = [{'label': label, 'value': value} for label, value in zip(counties['region_name'], counties['region_id'])]
