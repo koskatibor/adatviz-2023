@@ -1,5 +1,4 @@
 import datetime
-
 import pandas as pd
 import plotly.express as px
 import plotly.figure_factory as ff
@@ -13,7 +12,7 @@ cache = diskcache.Cache("./cache")
 bg_callback_manager = DiskcacheManager(cache)
 
 # Initialize Dash application
-app = Dash(__name__, background_callback_manager=bg_callback_manager)
+app = Dash(__name__, background_callback_manager=bg_callback_manager, suppress_callback_exceptions=True)
 server = app.server
 app.title = "Secondhand car market Hungary (2020 & 2023)"
 
@@ -223,4 +222,4 @@ def filter_data(year='2020', region_id=None, proseller='ÖSSZES', post_code=None
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
