@@ -14,7 +14,7 @@ bg_callback_manager = DiskcacheManager(cache)
 # Initialize Dash application
 app = Dash(__name__, background_callback_manager=bg_callback_manager)
 server = app.server
-app.title = "Secondhand car market Hungary (2020 & 2023)"
+app.title = "Secondhand car market Hungary (2020)"
 
 # IMPORT 2020 DATA
 dtypes = {"ad_id": int, "region_id": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
@@ -23,10 +23,10 @@ na_values_list = ["", " ", "NA", None]
 ads = pd.read_csv("../db_2020/advertisements_202006112147.csv", dtype=dtypes, parse_dates=date_columns, dayfirst=True, na_values=na_values_list, engine="c", )
 
 # IMPORT 2023 DATA
-dtypes = {"ad_id": int, "region": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
-date_columns = ["production", "documentvalid"]
-na_values_list = ["", " ", "NA", None]
-ads_2023 = pd.read_csv("../db_2023/advertisements_processed.csv", dtype=dtypes, parse_dates=date_columns, na_values=na_values_list, engine="c", encoding="latin-1")
+# dtypes = {"ad_id": int, "region": int, "ad_price": int, "numpictures": int, "proseller": bool, "adoldness": int, "postal_code": int, "mileage": int, "clime_id": int,  "shifter": str, "person_capacity": int,"doorsnumber": int, "color": int, "brand_id": int, "model_id": int, "ccm": int, "highlighted": bool, "description": str, "advertisement_url": str, "catalog_url": str, "is_sold": bool}
+# date_columns = ["production", "documentvalid"]
+# na_values_list = ["", " ", "NA", None]
+# ads_2023 = pd.read_csv("../db_2023/advertisements_processed.csv", dtype=dtypes, parse_dates=date_columns, na_values=na_values_list, engine="c", encoding="latin-1")
 
 # IMPORT KEY-VALUE TABLES
 dtypes = {"region_id": int, "region_name": str}
@@ -122,10 +122,10 @@ app.layout = dmc.Container([
     background=True,
     manager=bg_callback_manager
 )
-def filter_map(selected_year, region, pro, brand):
-    data = filter_data(year=selected_year, region_id=region, proseller=pro, brand_id=brand)
+def filter_map(region, pro, brand):
+    data = filter_data(region_id=region, proseller=pro, brand_id=brand)
     description = f'{len(data)} hirdetés alapján'
-    scatter = generate_scatter(data[['ad_price', 'production', 'postal_code']])
+    scatter = generate_scatter(data[['ad_price', 'production', 'mileage']])
     map = generate_map(prepare_map_data(data[['region_id', 'postal_code', 'ad_price']]))
     pie = generate_brand_pie(data[['brand_id']])
     corr_heatmap = generate_corr_heatmap(data[["region_id", "ad_price", "mileage", "production", "documentvalid", "adoldness", "ccm", "brand_id", "model_id",
@@ -176,7 +176,7 @@ def generate_map(map_df):
 def generate_scatter(data):
     scatter_data = data.query('production > "%s"' % (datetime.date(1900, 1,1))).copy()
     scatter_data.sort_values(by='ad_price')
-    fig = px.scatter(x=scatter_data['production'], y=scatter_data['ad_price'], color=scatter_data['postal_code'], title="A gyártási év és a meghirdetett ár közötti kapcsolat", labels={"production": "Gyártási év", "ad_price": "Meghirdetett ár"})
+    fig = px.scatter(x=scatter_data['production'], y=scatter_data['ad_price'], color_continuous_scale=scatter_data["mileage"], title="A gyártási év és a meghirdetett ár közötti kapcsolat", labels={"x": "Gyártási év", "y": "Meghirdetett ár", "color": "Futott KM"})
     return fig
 
 
@@ -193,14 +193,14 @@ def generate_corr_heatmap(data):
                                    x=list(corr_mx.columns),
                                    y=list(corr_mx.index),
                                    colorscale='Oranges')
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
     return fig
 
 
-def filter_data(year='2020', region_id=None, proseller='ÖSSZES', post_code=None, brand_id=None, model_id=None):
-    if year == '2020':
-        filtered_df = ads.copy()
-    else:
-        filtered_df = ads_2023.copy()
+def filter_data(region_id=None, proseller='ÖSSZES', post_code=None, brand_id=None, model_id=None):
+    filtered_df = ads.copy()
 
     if region_id and region_id != -1:
         filtered_df = filtered_df.loc[filtered_df['region_id'] == region_id]
@@ -221,4 +221,4 @@ def filter_data(year='2020', region_id=None, proseller='ÖSSZES', post_code=None
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=True)
