@@ -44,6 +44,7 @@ geo = gpd.read_file("../postal_codes.geojson")
 region_options = [{'label': label, 'value': value} for label, value in zip(counties['region_name'], counties['region_id'])]
 brand_options = [{'label': label, 'value': value} for label, value in zip(brands['brand_name'], brands['brand_id'])]
 model_options = [{'label': label, 'value': value} for label, value in zip(models['model_name'], models['model_id'])]
+production_year_options = [{'value': value} for value in zip(ads['production'])]
 
 app.layout = dmc.Container([
         dmc.Title('Magyarországi használtautó adatok (2020 - A hasznaltauto.hu hirdetései alapján)', color="blue", size="h3", style={'float': 'center'}),
@@ -70,6 +71,11 @@ app.layout = dmc.Container([
             options=brand_options,
             value=brands['brand_id'][brands.index[brands['brand_id'] == -1][0]],  # Az alapértelmezett kiválasztott érték
             style={'display': 'inline-block', 'margin-left': '10px', 'width': '250px'}
+        ),
+        dcc.RangeSlider(min(ads["production"].dt.year), max(ads["production"].dt.year),
+            id='production-year-slider',
+            marks={i: '{}'.format(i) for i in range(min(ads["production"].dt.year), max(ads["production"].dt.year), 5)},
+            value=[min(ads["production"].dt.year), max(ads["production"].dt.year)]
         ),
         # dcc.Dropdown(s
         #     id='model-dropdown',
@@ -118,19 +124,31 @@ app.layout = dmc.Container([
      Output(component_id='heatmap', component_property='figure')],
     [Input(component_id='region-dropdown', component_property='value'),
      Input(component_id='proseller-dropdown', component_property='value'),
-     Input(component_id='brand-dropdown', component_property='value')],
+     Input(component_id='brand-dropdown', component_property='value'),
+     Input(component_id='production-year-slider', component_property='value')],
     background=True,
     manager=bg_callback_manager
 )
-def filter_map(region, pro, brand):
-    data = filter_data(region_id=region, proseller=pro, brand_id=brand)
-    description = f'{len(data)} hirdetés alapján'
-    scatter = generate_scatter(data[['ad_price', 'production', 'mileage']])
-    map = generate_map(prepare_map_data(data[['region_id', 'postal_code', 'ad_price']]))
-    pie = generate_brand_pie(data[['brand_id']])
-    corr_heatmap = generate_corr_heatmap(data[["region_id", "ad_price", "mileage", "production", "documentvalid", "adoldness", "ccm", "brand_id", "model_id",
-         "numpictures", "proseller", "clime_id", "person_capacity", "doorsnumber", "color", "highlighted"]])
-    return data.sort_values(by='ad_id').to_dict('records'), map, description, scatter, pie, corr_heatmap
+def filter_map(region, pro, brand, production_year_range):
+    data = filter_data(region_id=region, proseller=pro, brand_id=brand, production_range=production_year_range)
+    if data.empty:
+        description = "Nincs megjeleníthető adat"
+        scatter = px.scatter()
+        map = {"data": [], "layout": {}}
+        pie = px.pie(title="Márka szerinti eloszlás - Top 10")
+        corr_heatmap = generate_corr_heatmap(data[["region_id", "ad_price", "mileage", "production", "documentvalid",
+                                                   "adoldness", "ccm", "brand_id", "model_id",
+                                                   "numpictures", "proseller", "clime_id", "person_capacity",
+                                                   "doorsnumber", "color", "highlighted"]])
+        return data.sort_values(by='ad_id').to_dict('records'), map, description, scatter, pie, corr_heatmap
+    else:
+        description = f'{len(data)} hirdetés alapján'
+        scatter = generate_scatter(data[['ad_price', 'production', 'mileage']])
+        map = generate_map(prepare_map_data(data[['region_id', 'postal_code', 'ad_price']]))
+        pie = generate_brand_pie(data[['brand_id']])
+        corr_heatmap = generate_corr_heatmap(data[["region_id", "ad_price", "mileage", "production", "documentvalid", "adoldness", "ccm", "brand_id", "model_id",
+             "numpictures", "proseller", "clime_id", "person_capacity", "doorsnumber", "color", "highlighted"]])
+        return data.sort_values(by='ad_id').to_dict('records'), map, description, scatter, pie, corr_heatmap
 
 
 def prepare_map_data(data):
@@ -174,9 +192,8 @@ def generate_map(map_df):
     return fig
 
 def generate_scatter(data):
-    scatter_data = data.query('production > "%s"' % (datetime.date(1900, 1,1))).copy()
-    scatter_data.sort_values(by='ad_price')
-    fig = px.scatter(x=scatter_data['production'], y=scatter_data['ad_price'], color_continuous_scale=scatter_data["mileage"], title="A gyártási év és a meghirdetett ár közötti kapcsolat", labels={"x": "Gyártási év", "y": "Meghirdetett ár", "color": "Futott KM"})
+    data.sort_values(by='ad_price')
+    fig = px.scatter(data, x='production', y='ad_price', color='mileage', title="A gyártási év és a meghirdetett ár közötti kapcsolat", labels={"x": "Gyártási év", "y": "Meghirdetett ár", "color": "Futott KM"})
     return fig
 
 
@@ -199,22 +216,26 @@ def generate_corr_heatmap(data):
     return fig
 
 
-def filter_data(region_id=None, proseller='ÖSSZES', post_code=None, brand_id=None, model_id=None):
+def filter_data(region_id=None, proseller='ÖSSZES', post_code=None, brand_id=None, model_id=None, production_range=None):
     filtered_df = ads.copy()
 
     if region_id and region_id != -1:
-        filtered_df = filtered_df.loc[filtered_df['region_id'] == region_id]
+        filtered_df = filtered_df.loc[filtered_df['region_id'].values == region_id]
     if proseller != 'ÖSSZES':
         if proseller == 'True':
-            filtered_df = filtered_df.loc[filtered_df['proseller'] == True]
+            filtered_df = filtered_df.loc[filtered_df['proseller'].values == True]
         else:
-            filtered_df = filtered_df.loc[filtered_df['proseller'] == False]
+            filtered_df = filtered_df.loc[filtered_df['proseller'].values == False]
     if post_code:
-        filtered_df = filtered_df.loc[filtered_df['postal_code'] == post_code]
+        filtered_df = filtered_df.loc[filtered_df['postal_code'].values == post_code]
     if brand_id and brand_id != -1:
-        filtered_df = filtered_df.loc[filtered_df['brand_id'] == brand_id]
+        filtered_df = filtered_df.loc[filtered_df['brand_id'].values == brand_id]
     if model_id and model_id != -1:
-        filtered_df = filtered_df.loc[filtered_df['model_id'] == model_id]
+        filtered_df = filtered_df.loc[filtered_df['model_id'].values == model_id]
+    if production_range:
+        filtered_df = filtered_df.query('production > "%s"' % (datetime.date(1900, 1, 1))).copy()
+        filtered_df = filtered_df.loc[filtered_df["production"].dt.year.values >= production_range[0]]
+        filtered_df = filtered_df.loc[filtered_df["production"].dt.year.values <= production_range[1]]
 
     return filtered_df
 
